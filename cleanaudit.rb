@@ -1,11 +1,3 @@
-############################################################################
-###																		 ###
-### Changed the way lines are parsed - instead of looking for CARD MASK, ###
-### go to next line anyway. Instead of weird Error line that does not    ###
-### parse, put ALL information into a separate file named REMOVEmmdd.csv ###
-### which fixes the bug that removes and adds partial lines.			 ###
-###																		 ###
-############################################################################
 
 exit if Object.const_defined?(:Ocra)
 
@@ -148,10 +140,9 @@ Dir.glob("Audit????.csv") do |audit|
 		line_number = 0
 		shouldREM = 0
 		while line = auditlines.gets
-			#if (line_number == 1 && !(line =~ /\d{4}\sExp:\d{4}/))
-			#	next
-			#els
-			if line_number == 1
+			if (line_number == 1 && !(line =~ /\sID:/))
+				next
+			elsif line_number == 1
 				line_number = 2
 			end
 			if (line =~ /^\d{1,2}:\d\d\s[AP]M.+PAYMENT/ && line_number == 0)
@@ -185,7 +176,7 @@ Dir.glob("Audit????.csv") do |audit|
 						removeaudit.puts "TIME,TRANSTYPE,CARDTYPE,TABLE,CHECK,EMPLOYEE,AUTHAMT,STARTTIP,ENDTIP,CARDNUM,EXP,CARDMASK"
 						shouldREM = 1
 					end
-					removeaudit.puts "#{transtime},REMOVE,#{cardtype},#{table},#{check},#{employee},#{authamt},#{starttip},#{endtip},#{cardnum},#{expiration},#{cardmask}"
+					removeaudit.puts "#{transtime},#{transtype},#{cardtype},#{table},#{check},#{employee},#{authamt},#{starttip},#{endtip},#{cardnum},#{expiration},#{cardmask}"
 					#cleanaudit.puts "#{transtime},#{transtype},ERROR-DELETE,#{table},#{check},#{employee},#{authamt},#{starttip},#{endtip},#{cardnum},#{expiration},#{cardmask}"
 					#cleanaudit.puts "ERROR,\"#{txn}\",#{transtime},#{transtype},#{authamt},#{cardmask}"
 				end

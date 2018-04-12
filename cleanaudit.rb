@@ -1,3 +1,11 @@
+############################################################################
+###																		 ###
+### Changed the way lines are parsed - instead of looking for CARD MASK, ###
+### go to next line anyway. Instead of weird Error line that does not    ###
+### parse, put ALL information into a separate file named REMOVEmmdd.csv ###
+### which fixes the bug that removes and adds partial lines.			 ###
+###																		 ###
+############################################################################
 
 exit if Object.const_defined?(:Ocra)
 
@@ -20,6 +28,9 @@ def parse_cardtype(line)
 	    line =~ /\,(VISA|MC|M\/C|MASTERCARD|AMEX|DISC|DISCOVER)/i ||
 	    line =~ /-\s(VISA|MC|M\/C|MASTERCARD|AMEX|DISC|DISCOVER)/i)
 		cardtype = $1
+	else
+		line =~ /PAYMENT\s(.*)\son/i
+		cardtype = $1
 	end
 	cardtype
 end
@@ -27,6 +38,9 @@ end
 def parse_table(line)
 	if line =~ /\son\s(.+?)\s(Chk:)/
 		table = $1
+	end
+	if table.include? ','
+		table.sub!(',','')
 	end
 	table
 end
@@ -98,6 +112,8 @@ def parse_cardnum(line)
 		cardnum = $1
 	elsif line =~ /\sID:X+\d{4}\s->\s(\d{15,16})\sExp:/
 		cardnum = $1	
+	else line =~ /\sID:(.*)\sExp:/
+		cardnum = $1	
 	end
 	if (cardnum)
 		cardnum = "#{cardnum}_"
@@ -130,10 +146,12 @@ Dir.glob("Audit????.csv") do |audit|
 	File.open(audit, "r") do |auditlines|
 		cleanaudit.puts "TIME,TRANSTYPE,CARDTYPE,TABLE,CHECK,EMPLOYEE,AUTHAMT,STARTTIP,ENDTIP,CARDNUM,EXP,CARDMASK"
 		line_number = 0
+		shouldREM = 0
 		while line = auditlines.gets
-			if (line_number == 1 && !(line =~ /\d{4}\sExp:\d{4}/))
-				next
-			elsif line_number == 1
+			#if (line_number == 1 && !(line =~ /\d{4}\sExp:\d{4}/))
+			#	next
+			#els
+			if line_number == 1
 				line_number = 2
 			end
 			if (line =~ /^\d{1,2}:\d\d\s[AP]M.+PAYMENT/ && line_number == 0)
@@ -161,7 +179,15 @@ Dir.glob("Audit????.csv") do |audit|
 				if (transtime && transtype && authamt && cardmask)
 					cleanaudit.puts "#{transtime},#{transtype},#{cardtype},#{table},#{check},#{employee},#{authamt},#{starttip},#{endtip},#{cardnum},#{expiration},#{cardmask}"
 				else
-					cleanaudit.puts "ERROR,\"#{txn}\",#{transtime},#{transtype},#{authamt},#{cardmask}"
+					if (shouldREM ==0)
+						removefile = audit.gsub(/Audit/, "REMOVE")
+						removeaudit = File.new(removefile, "w")
+						removeaudit.puts "TIME,TRANSTYPE,CARDTYPE,TABLE,CHECK,EMPLOYEE,AUTHAMT,STARTTIP,ENDTIP,CARDNUM,EXP,CARDMASK"
+						shouldREM = 1
+					end
+					removeaudit.puts "#{transtime},REMOVE,#{cardtype},#{table},#{check},#{employee},#{authamt},#{starttip},#{endtip},#{cardnum},#{expiration},#{cardmask}"
+					#cleanaudit.puts "#{transtime},#{transtype},ERROR-DELETE,#{table},#{check},#{employee},#{authamt},#{starttip},#{endtip},#{cardnum},#{expiration},#{cardmask}"
+					#cleanaudit.puts "ERROR,\"#{txn}\",#{transtime},#{transtype},#{authamt},#{cardmask}"
 				end
 				
 				line_number = 0

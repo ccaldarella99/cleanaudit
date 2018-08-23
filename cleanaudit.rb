@@ -163,7 +163,7 @@ Dir.glob("Audit????.csv") do |audit|
 				starttip = parse_startip(txn)
 				endtip = parse_endtip(txn)
 				cardnum = parse_cardnum(txn)
-				expiration = parse_expiration(txn)
+				expiration = parse_expiration(txn).to_s.rjust(4, '0')
 				cardmask = parse_cardmask(txn, cardnum)
 			
 			

@@ -39,7 +39,7 @@ end
 
 def parse_check(line, transtype)
 	if transtype == 'MOVE'
-		if line =~ /\sChk:(\d{5,6})\sto\sChk:(\d{5,6})\s/
+		if line =~ /\sChk:(\d{5,8})\sto\sChk:(\d{5,8})\s/
 			check = "#{$1} -> #{$2}"
 		end
 	else
